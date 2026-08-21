@@ -1,0 +1,86 @@
+2026-08-19 00:15:15.459 [info] [main] Log level: Info
+2026-08-19 00:15:15.459 [info] [main] Validating found git in: "git"
+2026-08-19 00:15:15.459 [info] [main] Using git "2.43.0" from "git"
+2026-08-19 00:15:15.459 [info] [Model][doInitialScan] Initial repository scan started
+2026-08-19 00:15:15.459 [info] > git rev-parse --show-toplevel [3ms]
+2026-08-19 00:15:15.459 [info] fatal: not a git repository (or any parent up to mount point /)
+Stopping at filesystem boundary (GIT_DISCOVERY_ACROSS_FILESYSTEM not set).
+2026-08-19 00:15:16.946 [info] > git rev-parse --show-toplevel [1481ms]
+2026-08-19 00:15:16.946 [info] fatal: not a git repository (or any parent up to mount point /)
+Stopping at filesystem boundary (GIT_DISCOVERY_ACROSS_FILESYSTEM not set).
+2026-08-19 00:15:16.971 [info] > git rev-parse --show-toplevel [11ms]
+2026-08-19 00:15:16.971 [info] fatal: not a git repository (or any parent up to mount point /)
+Stopping at filesystem boundary (GIT_DISCOVERY_ACROSS_FILESYSTEM not set).
+2026-08-19 00:15:19.209 [info] > git rev-parse --show-toplevel [2229ms]
+2026-08-19 00:15:19.209 [info] fatal: not a git repository (or any parent up to mount point /)
+Stopping at filesystem boundary (GIT_DISCOVERY_ACROSS_FILESYSTEM not set).
+2026-08-19 00:15:19.276 [info] > git rev-parse --show-toplevel [60ms]
+2026-08-19 00:15:19.276 [info] fatal: not a git repository (or any parent up to mount point /)
+Stopping at filesystem boundary (GIT_DISCOVERY_ACROSS_FILESYSTEM not set).
+2026-08-19 00:15:19.330 [info] > git rev-parse --show-toplevel [46ms]
+2026-08-19 00:15:19.330 [info] fatal: not a git repository (or any parent up to mount point /)
+Stopping at filesystem boundary (GIT_DISCOVERY_ACROSS_FILESYSTEM not set).
+2026-08-19 00:15:20.148 [info] > git rev-parse --show-toplevel [793ms]
+2026-08-19 00:15:20.149 [info] fatal: not a git repository (or any parent up to mount point /)
+Stopping at filesystem boundary (GIT_DISCOVERY_ACROSS_FILESYSTEM not set).
+2026-08-19 00:15:20.394 [info] > git rev-parse --show-toplevel [197ms]
+2026-08-19 00:15:20.394 [info] fatal: not a git repository (or any parent up to mount point /)
+Stopping at filesystem boundary (GIT_DISCOVERY_ACROSS_FILESYSTEM not set).
+2026-08-19 00:15:23.196 [info] > git rev-parse --show-toplevel [1057ms]
+2026-08-19 00:15:23.201 [info] fatal: not a git repository (or any parent up to mount point /)
+Stopping at filesystem boundary (GIT_DISCOVERY_ACROSS_FILESYSTEM not set).
+2026-08-19 00:15:27.293 [info] > git rev-parse --show-toplevel [3780ms]
+2026-08-19 00:15:27.293 [info] fatal: not a git repository (or any parent up to mount point /)
+Stopping at filesystem boundary (GIT_DISCOVERY_ACROSS_FILESYSTEM not set).
+2026-08-19 00:15:27.380 [info] > git rev-parse --show-toplevel [70ms]
+2026-08-19 00:15:27.380 [info] fatal: not a git repository (or any parent up to mount point /)
+Stopping at filesystem boundary (GIT_DISCOVERY_ACROSS_FILESYSTEM not set).
+2026-08-19 00:15:27.381 [info] [Model][doInitialScan] Initial repository scan completed - repositories (0), closed repositories (0), parent repositories (0), unsafe repositories (0)
+2026-08-19 00:15:27.514 [info] > git rev-parse --show-toplevel [81ms]
+2026-08-19 00:15:27.516 [info] fatal: not a git repository (or any parent up to mount point /)
+Stopping at filesystem boundary (GIT_DISCOVERY_ACROSS_FILESYSTEM not set).
+2026-08-19 00:15:27.564 [info] > git rev-parse --show-toplevel [30ms]
+2026-08-19 00:15:27.564 [info] fatal: not a git repository (or any parent up to mount point /)
+Stopping at filesystem boundary (GIT_DISCOVERY_ACROSS_FILESYSTEM not set).
+2026-08-19 00:15:28.389 [info] > git rev-parse --show-toplevel [11ms]
+2026-08-19 00:15:28.391 [info] fatal: not a git repository (or any parent up to mount point /)
+Stopping at filesystem boundary (GIT_DISCOVERY_ACROSS_FILESYSTEM not set).
+2026-08-19 00:15:33.526 [info] > git rev-parse --show-toplevel [19ms]
+2026-08-19 00:15:33.526 [info] fatal: not a git repository (or any parent up to mount point /)
+Stopping at filesystem boundary (GIT_DISCOVERY_ACROSS_FILESYSTEM not set).
+2026-08-19 00:15:49.585 [info] > git rev-parse --show-toplevel [35ms]
+2026-08-19 00:15:49.787 [info] > git rev-parse --git-dir --git-common-dir --show-superproject-working-tree [95ms]
+2026-08-19 00:15:50.007 [info] [Model][openRepository] Opened repository (path): /home/student_01_cf14d6dbc39c/.gemini/history/student-01-cf14d6dbc39c
+2026-08-19 00:15:50.007 [info] [Model][openRepository] Opened repository (real path): /home/student_01_cf14d6dbc39c/.gemini/history/student-01-cf14d6dbc39c
+2026-08-19 00:15:50.007 [info] [Model][openRepository] Opened repository (kind): repository
+2026-08-19 00:15:53.023 [info] > git config --get --local core.virtualfilesystem [2947ms]
+2026-08-19 00:15:53.024 [warning] [Git][config] git config failed: Failed to execute git
+2026-08-19 00:15:53.048 [info] > git config --get commit.template [249ms]
+2026-08-19 00:15:53.160 [info] [Git][getRemotes] No remotes found in the git config file
+2026-08-19 00:15:53.300 [info] > git for-each-ref --format=%(refname)%00%(upstream:short)%00%(objectname)%00%(upstream:track)%00%(upstream:remotename)%00%(upstream:remoteref) refs/heads/main refs/remotes/main [140ms]
+2026-08-19 00:15:53.465 [info] > git status -z -uall [85ms]
+2026-08-19 00:15:53.494 [info] > git for-each-ref --sort -committerdate --format %(refname)%00%(objectname)%00%(*objectname) [38ms]
+2026-08-19 00:15:53.873 [info] > git for-each-ref --format=%(refname)%00%(upstream:short)%00%(objectname)%00%(upstream:track)%00%(upstream:remotename)%00%(upstream:remoteref) refs/heads/main refs/remotes/main [252ms]
+2026-08-19 00:15:53.947 [info] > git config --get commit.template [103ms]
+2026-08-19 00:15:54.050 [info] [Git][getRemotes] No remotes found in the git config file
+2026-08-19 00:15:54.067 [info] > git config --get --local branch.main.vscode-merge-base [129ms]
+2026-08-19 00:15:54.067 [warning] [Git][config] git config failed: Failed to execute git
+2026-08-19 00:15:54.147 [info] > git for-each-ref --format=%(refname)%00%(upstream:short)%00%(objectname)%00%(upstream:track)%00%(upstream:remotename)%00%(upstream:remoteref) refs/heads/main refs/remotes/main [98ms]
+2026-08-19 00:15:54.288 [info] > git status -z -uall [62ms]
+2026-08-19 00:15:54.294 [info] > git reflog main --grep-reflog=branch: Created from *. [157ms]
+2026-08-19 00:15:54.307 [info] > git for-each-ref --sort -committerdate --format %(refname)%00%(objectname)%00%(*objectname) [29ms]
+2026-08-19 00:16:14.383 [info] > git config --get commit.template [9ms]
+2026-08-19 00:16:14.416 [info] [Git][getRemotes] No remotes found in the git config file
+2026-08-19 00:16:14.417 [info] > git for-each-ref --format=%(refname)%00%(upstream:short)%00%(objectname)%00%(upstream:track)%00%(upstream:remotename)%00%(upstream:remoteref) refs/heads/main refs/remotes/main [10ms]
+2026-08-19 00:16:14.475 [info] > git status -z -uall [36ms]
+2026-08-19 00:16:14.480 [info] > git for-each-ref --sort -committerdate --format %(refname)%00%(objectname)%00%(*objectname) [17ms]
+2026-08-19 00:17:11.961 [info] [Git][getRemotes] No remotes found in the git config file
+2026-08-19 00:17:11.965 [info] > git config --get commit.template [24ms]
+2026-08-19 00:17:11.969 [info] > git for-each-ref --format=%(refname)%00%(upstream:short)%00%(objectname)%00%(upstream:track)%00%(upstream:remotename)%00%(upstream:remoteref) refs/heads/main refs/remotes/main [8ms]
+2026-08-19 00:17:12.018 [info] > git status -z -uall [27ms]
+2026-08-19 00:17:12.021 [info] > git for-each-ref --sort -committerdate --format %(refname)%00%(objectname)%00%(*objectname) [4ms]
+2026-08-19 00:17:17.103 [info] > git config --get commit.template [24ms]
+2026-08-19 00:17:17.149 [info] [Git][getRemotes] No remotes found in the git config file
+2026-08-19 00:17:17.152 [info] > git for-each-ref --format=%(refname)%00%(upstream:short)%00%(objectname)%00%(upstream:track)%00%(upstream:remotename)%00%(upstream:remoteref) refs/heads/main refs/remotes/main [3ms]
+2026-08-19 00:17:17.235 [info] > git status -z -uall [45ms]
+2026-08-19 00:17:17.243 [info] > git for-each-ref --sort -committerdate --format %(refname)%00%(objectname)%00%(*objectname) [18ms]

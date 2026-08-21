@@ -1,0 +1,8 @@
+2026-08-19 00:18:08.842 [warning] Dir "/home/student_01_cf14d6dbc39c/.pixi/envs" is not watchable (directory does not exist)
+2026-08-19 00:18:11.843 [info] > conda info --json
+2026-08-19 00:18:11.848 [info] Skipping ActivatedEnv Detection:  process.env.VSCODE_CLI !== '1'
+2026-08-19 00:18:11.865 [info] Python interpreter path: /bin/python
+2026-08-19 00:18:15.785 [info] > pyenv which python
+2026-08-19 00:18:15.785 [info] cwd: .
+2026-08-19 00:18:30.292 [info] Starting Jedi language server for student_01_cf14d6dbc39c.
+2026-08-19 00:22:39.587 [error] Unable to find workspace for given file

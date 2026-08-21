@@ -1,0 +1,25 @@
+2026-08-19 00:18:07.299 [info] Extension host with pid 2768 started
+2026-08-19 00:18:07.315 [info] Lock '/home/student_01_cf14d6dbc39c/.codeoss/data/User/workspaceStorage/-4ed913d6/vscode.lock': Lock acquired.
+2026-08-19 00:18:07.576 [info] ExtensionService#_doActivateExtension vscode.github-authentication, startup: false, activationEvent: 'onAuthenticationRequest:github'
+2026-08-19 00:18:07.577 [info] ExtensionService#_doActivateExtension vscode.emmet, startup: false, activationEvent: 'onLanguage'
+2026-08-19 00:18:07.578 [info] ExtensionService#_doActivateExtension ms-python.python, startup: false, activationEvent: 'onLanguage:python'
+2026-08-19 00:18:07.578 [info] ExtensionService#_doActivateExtension ms-toolsai.jupyter, startup: false, activationEvent: 'onLanguage:python'
+2026-08-19 00:18:08.579 [info] ExtensionService#_doActivateExtension vscode.git-base, startup: true, activationEvent: '*', root cause: vscode.git
+2026-08-19 00:18:08.636 [info] ExtensionService#_doActivateExtension vscode.git, startup: true, activationEvent: '*'
+2026-08-19 00:18:08.637 [info] ExtensionService#_doActivateExtension vscode.github, startup: true, activationEvent: '*'
+2026-08-19 00:18:08.876 [info] Eager extensions activated
+2026-08-19 00:18:08.877 [info] ExtensionService#_doActivateExtension EditorConfig.EditorConfig, startup: false, activationEvent: 'onStartupFinished'
+2026-08-19 00:18:08.878 [info] ExtensionService#_doActivateExtension google.cloud-shell, startup: false, activationEvent: 'onStartupFinished'
+2026-08-19 00:18:08.878 [info] ExtensionService#_doActivateExtension google.geminicodeassist, startup: false, activationEvent: 'onStartupFinished', root cause: googlecloudtools.cloudcode
+2026-08-19 00:18:08.879 [info] ExtensionService#_doActivateExtension googlecloudtools.datacloud, startup: false, activationEvent: 'onStartupFinished', root cause: googlecloudtools.cloudcode
+2026-08-19 00:18:08.879 [info] ExtensionService#_doActivateExtension vscode.debug-auto-launch, startup: false, activationEvent: 'onStartupFinished'
+2026-08-19 00:18:08.880 [info] ExtensionService#_doActivateExtension google.gemini-cli-vscode-ide-companion, startup: false, activationEvent: 'onStartupFinished'
+2026-08-19 00:18:08.880 [info] ExtensionService#_doActivateExtension vscode.merge-conflict, startup: false, activationEvent: 'onStartupFinished'
+2026-08-19 00:18:12.631 [info] ExtensionService#_doActivateExtension vscode.configuration-editing, startup: false, activationEvent: 'onLanguage:jsonc'
+2026-08-19 00:18:12.632 [info] ExtensionService#_doActivateExtension vscode.json-language-features, startup: false, activationEvent: 'onLanguage:jsonc'
+2026-08-19 00:18:12.634 [info] ExtensionService#_doActivateExtension vscode.typescript-language-features, startup: false, activationEvent: 'onLanguage:jsonc'
+2026-08-19 00:18:15.920 [info] ExtensionService#_doActivateExtension vscode.terminal-suggest, startup: false, activationEvent: 'onTerminalShellIntegration:*'
+2026-08-19 00:18:18.256 [info] ExtensionService#_doActivateExtension googlecloudtools.cloudcode, startup: false, activationEvent: 'onStartupFinished'
+2026-08-19 00:32:06.711 [warning] google.geminicodeassist - Code actions of kind 'refactor' requested but returned code action does not have a 'kind'. Code action will be dropped. Please set 'CodeAction.kind'.
+2026-08-19 00:32:06.711 [warning] google.geminicodeassist - Code actions of kind 'refactor' requested but returned code action does not have a 'kind'. Code action will be dropped. Please set 'CodeAction.kind'.
+2026-08-19 00:32:06.711 [warning] google.geminicodeassist - Code actions of kind 'refactor' requested but returned code action does not have a 'kind'. Code action will be dropped. Please set 'CodeAction.kind'.
