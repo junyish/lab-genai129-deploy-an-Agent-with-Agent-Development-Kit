@@ -1,42 +1,44 @@
 # Architecture & Engineering Guide: Deploying Hierarchical Multi-Agent Systems to Vertex AI Agent Engines
 
-> **Lab Reference:** `GENAI129` — *Deploy an Agent with Agent Development Kit (ADK)*  
-> **Architecture Pattern:** Hierarchical Multi-Agent Coordination, Tool Wrapping, State Injection, Cloud Logging  
+> **Lab Reference:** `GENAI129 / Focus 130021` — *Deploy an Agent with Agent Development Kit (ADK)*  
+> **Curriculum Track:** Google Agent Development Kit (ADK) & Vertex AI Reasoning Engine / Agent Platform  
+> **Architecture Pattern:** Hierarchical Multi-Agent Coordination, Tool Wrapping, State Injection, Cloud Logging, Streaming UI Bridge  
 > **Core Technologies:** Google Agent Development Kit (ADK), Vertex AI Reasoning Engine / Agent Engines, Gemini 2.5 Flash, Vertex AI Search, Google Cloud Logging, Chainlit Streaming UI.
 
 ---
 
 ## Executive Summary & System Architecture
 
-Enterprises moving from simple RAG chatbots to multi-step transactional workflows require **hierarchical delegation**, **session state isolation**, and **managed cloud runtime deployment**. Monolithic prompt chains fail when tasks span heterogeneous competencies (e.g. searching a 10,000-item retail catalog vs. conducting geometric wall-surface mathematical calculations).
+Modern enterprise AI applications require a fundamental transition from single-prompt RAG chatbots to **multi-agent hierarchical systems with deterministic compute tools and managed cloud runtimes**. In complex domains (such as retail commerce, insurance claims, or technical diagnostics), monolithic prompt chains suffer from context dilution, prompt bloat, hallucinated arithmetic, and lost state across multi-turn sessions.
 
-This lab implements a production **Hierarchical Multi-Agent Customer Assistant (Cymbal Shops Paint Department)** deployed to **Vertex AI Reasoning Engine / Agent Engines** and served to end-users via a real-time reactive **Chainlit UI**.
+This engineering guide details the design, implementation, and deployment of a production-grade **Hierarchical Multi-Agent Assistant (Cymbal Shops Paint Department)** deployed to **Vertex AI Reasoning Engine / Agent Engines** and connected to a reactive **Chainlit Streaming Web UI**.
 
 ```mermaid
 graph TD
     classDef clientNode fill:#4285F4,stroke:#1a73e8,stroke-width:2px,color:#fff;
+    classDef engineNode fill:#1E88E5,stroke:#1565C0,stroke-width:2px,color:#fff;
     classDef rootNode fill:#FBBC04,stroke:#f29900,stroke-width:2px,color:#202124;
     classDef toolNode fill:#34A853,stroke:#188038,stroke-width:2px,color:#fff;
     classDef subAgentNode fill:#8E24AA,stroke:#6A1B9A,stroke-width:2px,color:#fff;
     classDef leafNode fill:#00ACC1,stroke:#00838F,stroke-width:2px,color:#fff;
 
-    Client["Customer (Chainlit UI Web Client)"]:::clientNode -->|"Streaming gRPC/HTTP Session"| Engine["Vertex AI Agent Engine (Reasoning Engine)"]:::clientNode
+    Client["Customer (Chainlit Web UI)"]:::clientNode -->|"Streaming gRPC/HTTP Session"| Engine["Vertex AI Agent Engine (Reasoning Engine)"]:::engineNode
     Engine -->|"Executes"| RootAgent["1. paint_agent (Root Coordinator)"]:::rootNode
     
     %% Root Agent Tools & Callbacks
-    RootAgent -->|"Tool Call (Synchronous Query)"| SearchTool["AgentTool(search_agent)"]:::toolNode
-    SearchTool -->|"Managed Search"| VAIS["Vertex AI Search Datastore<br/>(Cymbal Shops Catalog)"]:::toolNode
+    RootAgent -->|"Tool Call (Agent-as-a-Tool)"| SearchTool["AgentTool(search_agent)"]:::toolNode
+    SearchTool -->|"Managed Semantic Search"| VAIS["Vertex AI Search Datastore<br/>(Cymbal Shops Product Catalog)"]:::toolNode
     RootAgent -->|"Write State"| StateTool["set_session_value<br/>(SELECTED_PAINT, COVERAGE_RATE, PRICE)"]:::toolNode
     RootAgent -->|"Observability Hooks"| CloudLog["Google Cloud Logging<br/>(log_query_to_model, log_model_response)"]:::toolNode
 
     %% Hierarchical Delegation
-    RootAgent -->|"Delegates Conversation"| RoomPlanner["2. room_planner_agent"]:::subAgentNode
+    RootAgent -->|"Delegates Conversation Ownership"| RoomPlanner["2. room_planner_agent"]:::subAgentNode
     RoomPlanner -->|"Fetches Color Swatches"| GCS["Cloud Storage Bucket<br/>(PNG Color Palettes)"]:::toolNode
-    RoomPlanner -->|"Delegates Conversation"| CoverageCalc["3. coverage_calculator_agent"]:::leafNode
+    RoomPlanner -->|"Delegates Conversation Ownership"| CoverageCalc["3. coverage_calculator_agent"]:::leafNode
     
     %% Leaf Agent Tool
-    CoverageCalc -->|"Calculates Wall m² & Buckets"| CalcTool["paint_coverage_calculator<br/>(Geometric formula)"]:::toolNode
-    CoverageCalc -->|"Reads State"| SessionRead["Session Injection<br/>{SELECTED_PAINT?}, {COVERAGE_RATE?}"]:::leafNode
+    CoverageCalc -->|"Calculates Wall Surface Area & Buckets"| CalcTool["paint_coverage_calculator<br/>(Deterministic Geometric Formula)"]:::toolNode
+    CoverageCalc -->|"Reads State"| SessionRead["Session Context Injection<br/>{SELECTED_PAINT?}, {COVERAGE_RATE?}"]:::leafNode
 ```
 
 ---
@@ -44,53 +46,165 @@ graph TD
 ## 1. Core Architectural Pillars
 
 ### 1.1 Hierarchical Delegation (`sub_agents`) vs. Tool Wrapping (`AgentTool`)
-A foundational architectural pattern in ADK is knowing when to **delegate conversation ownership** vs. when to **query an agent as a functional tool**:
 
-| Dimension | `sub_agents=[agent_b]` (Delegation) | `AgentTool(agent=agent_b)` (Tool Wrapping) |
-| :--- | :--- | :--- |
-| **Control Flow** | Control is handed off to `agent_b`. `agent_b` directly interacts with the user. | Control remains with the parent agent. `agent_b` is queried in the background. |
-| **User Visibility** | The user enters a new persona/specialist conversation context (e.g. `room_planner_agent`). | The user is unaware of the sub-agent; parent synthesizes the tool result. |
-| **Ideal Use Case** | Multi-turn conversational phases (Room planning, checkout flow, incident triage). | Stateless or auxiliary data lookup (Search catalog, vector lookup, compliance check). |
-| **Lab Example** | `paint_agent` delegates to `room_planner_agent`, which delegates to `coverage_calculator_agent`. | `paint_agent` queries `search_agent` via `AgentTool(agent=search_agent)` to inspect paint specs without losing conversational context. |
+A core architectural decision in multi-agent engineering is choosing between **conversational handoff** and **functional tool invocation**:
 
-```python
-# AgentTool wrapping: search_agent runs as a tool inside paint_agent
-tools=[
-    AgentTool(agent=search_agent, skip_summarization=False),
-    set_session_value,
-]
+```mermaid
+flowchart TD
+    subgraph Delegation ["Conversational Delegation: sub_agents=[agent]"]
+        D_User["User"] <--> D_Parent["Parent Agent"]
+        D_Parent -- "Transfers Control" --> D_Child["Sub-Agent (Owns User Turns)"]
+        D_Child <--> D_User
+    end
 
-# sub_agents delegation: conversation hands off to room_planner_agent
-sub_agents=[room_planner_agent]
+    subgraph ToolWrapping ["Tool Wrapping: AgentTool(agent=agent)"]
+        T_User["User"] <--> T_Parent["Parent Agent"]
+        T_Parent -- "Executes Tool Call" --> T_ToolAgent["Agent-as-a-Tool (Background Query)"]
+        T_ToolAgent -- "Returns Tool Result" --> T_Parent
+        T_Parent -- "Synthesizes & Responds" --> T_User
+    end
 ```
 
+| Dimension | `sub_agents=[sub_agent]` (Conversational Delegation) | `AgentTool(agent=sub_agent)` (Tool Wrapping) |
+| :--- | :--- | :--- |
+| **Control Flow** | Control is transferred downward to the child agent. Child agent directly conducts multi-turn conversation with the user. | Control stays with parent agent. Sub-agent is queried synchronously as a black-box tool. |
+| **User Visibility** | User interacts with the sub-agent's persona (e.g. `room_planner_agent`). | User remains in conversation with parent agent; sub-agent output is synthesized by parent. |
+| **Ideal Use Cases** | Multi-step interactive workflows (room dimension intake, checkout flows, technical debugging). | Single-shot retrieval, summarization, or domain-specific lookups (catalog search, policy lookup). |
+| **Lab Implementation** | `paint_agent` $\rightarrow$ `room_planner_agent` $\rightarrow$ `coverage_calculator_agent`. | `paint_agent` queries `search_agent` via `AgentTool(agent=search_agent, skip_summarization=False)` to fetch paint specs. |
+
+#### Implementation Pattern:
+```python
+# Root Agent Configuration (adk_challenge_lab/paint_agent/agent.py)
+root_agent = Agent(
+    name="paint_agent",
+    model=Gemini(model=os.getenv("MODEL"), retry_options=RETRY_OPTIONS),
+    instruction="""...""",
+    # Conversational handoff to room planner
+    sub_agents=[room_planner_agent],
+    # Functional tool wrapping for search and state writing
+    tools=[
+        AgentTool(agent=search_agent, skip_summarization=False),
+        set_session_value,
+    ],
+    before_model_callback=log_query_to_model,
+    after_model_callback=log_model_response,
+)
+```
+
+---
+
 ### 1.2 Session State Management & Dynamic Context Injection
-Multi-agent systems require sharing contextual variables across disconnected agents without polluting the LLM prompt with repetitive message history:
-1. **Explicit Session State Writing:** The `set_session_value` tool writes structured key-value pairs directly to `ToolContext.state`:
+
+In multi-agent architectures, agents must share critical transaction variables without requiring the user to repeat information or bloating LLM prompt history.
+
+```mermaid
+sequenceDiagram
+    autonumber
+    actor User
+    participant PaintAgent as 1. paint_agent
+    participant State as ToolContext.state
+    participant RoomPlanner as 2. room_planner_agent
+    participant CoverageCalc as 3. coverage_calculator_agent
+
+    User->>PaintAgent: "I want to buy the EcoGreen paint."
+    PaintAgent->>State: set_session_value("SELECTED_PAINT", "EcoGreen")
+    PaintAgent->>State: set_session_value("COVERAGE_RATE", "12 sq m/L")
+    PaintAgent->>State: set_session_value("PRICE", "$45.00")
+    PaintAgent->>RoomPlanner: Transfer conversation
+    RoomPlanner->>User: "Great! Showing EcoGreen swatches. How many rooms?"
+    User->>RoomPlanner: "2 rooms: Living Room and Master Bedroom."
+    RoomPlanner->>CoverageCalc: Transfer conversation
+    Note over CoverageCalc: Injects {SELECTED_PAINT?}, {COVERAGE_RATE?} into prompt template
+    CoverageCalc->>User: "Let's calculate for EcoGreen (Coverage: 12 sq m/L). What are the dimensions?"
+```
+
+#### State Implementation Mechanics:
+1. **Writing State via Tool:**
    ```python
+   # adk_challenge_lab/paint_agent/tools.py
    def set_session_value(key: str, value: str, context: ToolContext) -> str:
+       """Stores key-value pairs in the persistent session state dictionary."""
        context.state[key] = value
        return f"stored '{value}' in '{key}'"
    ```
-2. **Declarative Prompt Injection:** Downstream agents (`room_planner_agent`, `coverage_calculator_agent`) automatically read session state via `{KEY?}` optional variable syntax:
+2. **Reading State via Prompt Variable Injection:**
    ```python
-   instruction="""
+   # adk_challenge_lab/paint_agent/sub_agents/room_planner/agent.py
+   instruction = f"""
+   - Find out how many rooms the user would like to paint.
+   - Based on the {{SELECTED_PAINT?}}, show the corresponding image swatch:
+     - EcoGreen: https://storage.cloud.google.com/{os.getenv("RESOURCES_BUCKET")}/ecogreens.png
+   """
+   ```
+   ```python
+   # adk_challenge_lab/paint_agent/sub_agents/room_planner/sub_agents/coverage_calculator/agent.py
+   instruction = """
+   You are a coverage calculator agent.
    The user has selected the paint: {SELECTED_PAINT?}.
    The coverage rate for this paint is: {COVERAGE_RATE?}.
+   
+   Use these values to calculate the total liters and buckets needed.
    """
    ```
 
-### 1.3 Enterprise Observability via Callback Hooks
-Enterprise agents must log inputs, intermediate reasoning, tool calls, and model outputs to centralized monitoring systems (Google Cloud Logging) without cluttering agent business logic:
-* **`before_model_callback`:** Intercepts outgoing requests to log exact prompt payloads.
-* **`after_model_callback`:** Intercepts model responses to log text outputs and function calls.
+---
+
+### 1.3 Deterministic Math Computation vs. LLM Arithmetic Hallucination
+
+Large language models are probabilistic token predictors and struggle with deterministic, multi-variable arithmetic (e.g. wall surface calculations subtracting window/door areas and rounding container buckets). 
+
+**Best Practice:** Delegate mathematical formulas to typed Python functions wrapped as ADK tools:
 
 ```python
+# adk_challenge_lab/paint_agent/sub_agents/room_planner/sub_agents/coverage_calculator/tools.py
+async def paint_coverage_calculator(
+    ceiling_height_in_m: float,
+    room_length_in_m: float,
+    room_width_in_m: float,
+    num_windows: int,
+    num_doors: int,
+) -> dict:
+    """Calculates the square-meters of paint required for the walls of a room.
+
+    Args:
+        ceiling_height_in_m: Ceiling height in meters (e.g. 2.4 - 2.7m)
+        room_length_in_m: Room length in meters
+        room_width_in_m: Room width in meters
+        num_windows: Number of standard windows (1.5 m² per window deduction)
+        num_doors: Number of standard doors (2.0 m² per door deduction)
+
+    Returns:
+        {"square_meters": float}
+    """
+    sq_meters = (
+        (((2 * room_length_in_m) + (2 * room_width_in_m)) * ceiling_height_in_m)
+        - (1.5 * num_windows)
+        - (2.0 * num_doors)
+    )
+    return {"square_meters": max(0.0, sq_meters)}
+```
+
+---
+
+### 1.4 Distributed Observability with Cloud Logging Callback Hooks
+
+Enterprise agent systems require centralized telemetry across all hierarchical agents without cluttering business logic:
+
+```python
+# adk_challenge_lab/paint_agent/callback_logging.py
+import logging
+import google.cloud.logging
+from google.adk.agents.callback_context import CallbackContext
+from google.adk.models import LlmResponse, LlmRequest
+
+# Intercept prompt before sending to LLM
 def log_query_to_model(callback_context: CallbackContext, llm_request: LlmRequest):
     if llm_request.contents and llm_request.contents[-1].role == "user":
-        last_user_message = llm_request.contents[-1].parts[-1].text
-        logging.info(f"[query to {callback_context.agent_name}]: {last_user_message}")
+        if llm_request.contents[-1].parts[-1].text:
+            last_user_message = llm_request.contents[-1].parts[-1].text
+            logging.info(f"[query to {callback_context.agent_name}]: {last_user_message}")
 
+# Intercept response and tool calls after receiving from LLM
 def log_model_response(callback_context: CallbackContext, llm_response: LlmResponse):
     if llm_response.content and llm_response.content.parts:
         for part in llm_response.content.parts:
@@ -105,78 +219,128 @@ def log_model_response(callback_context: CallbackContext, llm_response: LlmRespo
 ## 2. GCP & Ecosystem Product Deep Dive
 
 ### 2.1 Google Agent Development Kit (ADK)
-* **Agent Engine:** Provides hierarchical agent primitives (`Agent`), model abstractions (`Gemini`), and tool connectors (`AgentTool`, `VertexAiSearchTool`).
-* **Session Persistence:** Manages multi-turn conversation memory and session state across distributed requests.
-* **Exponential Backoff & Resilience:** Handles API rate limits gracefully via `types.HttpRetryOptions(initial_delay=1, max_delay=3, attempts=30)`.
-
-### 2.2 Vertex AI Reasoning Engine / Agent Engines
-* **Serverless Agent Runtime:** Vertex AI Agent Engines host and manage containerized agent logic with built-in auto-scaling, session management, and IAM security.
-* **SDK Client Integration:**
-  ```python
-  import vertexai
-  client = vertexai.Client(project=project_id, location=location)
-  agent = client.agent_engines.get(name="projects/.../locations/.../reasoningEngines/...")
-  
-  # Session Creation
-  session = agent.create_session(user_id="user_123")
-  
-  # Asynchronous Streaming
-  async for event in agent.async_stream_query(session_id=session["id"], message="Hello"):
-      yield event
+* **Agent Primitives:** Unified `Agent` construct supporting declarative instructions, tool binding, hierarchical delegation (`sub_agents`), and lifecycle callbacks.
+* **Model Connectors:** Native `google.adk.models.Gemini` wrapper with HTTP retry and exponential backoff configuration (`types.HttpRetryOptions(initial_delay=1, max_delay=3, attempts=30)`).
+* **Local Web Interface:** Built-in UI for testing agent turns locally:
+  ```bash
+  adk web --allow_origins='*'
   ```
 
-### 2.3 Vertex AI Search (Enterprise Datastore)
-* **Zero-ETL Search Grounding:** Fully managed semantic search over structured or unstructured product catalogs.
-* **ADK Built-in Connector:** `VertexAiSearchTool(search_engine_id=...)` connects the search datastore directly into Gemini's tool-calling pipeline.
+### 2.2 Vertex AI Reasoning Engine / Agent Engines
+* **Managed Serverless Runtime:** Vertex AI Agent Engines host custom agent applications securely on Google Cloud, providing managed session storage, IAM-authenticated gRPC/HTTP endpoints, and autoscaling.
+* **Client SDK Integration:**
+  ```python
+  import vertexai
+  client = vertexai.Client(project=PROJECT_ID, location=LOCATION)
+  
+  # Connect to deployed reasoning engine
+  agent = client.agent_engines.get(
+      name=f"projects/{PROJECT_NUMBER}/locations/{LOCATION}/reasoningEngines/{ENGINE_ID}"
+  )
+  
+  # Managed Session Lifecycle
+  session = agent.create_session(user_id="user_abc123")
+  session_id = session["id"]
+  
+  # Asynchronous Streaming Query
+  async for event in agent.async_stream_query(user_id="user_abc123", session_id=session_id, message="Hi"):
+      # Handle streaming tokens
+      ...
+  ```
 
-### 2.4 Real-time Reactive UI (Chainlit Integration)
-* **Streaming Responses:** Consumes `agent.async_stream_query` and streams text tokens in real-time to the frontend.
-* **Multi-Modal HTML Swatch Transformation:** Parses inline `<img>` tags emitted by agents using BeautifulSoup and transforms them into native Chainlit visual elements (`cl.Image`).
+### 2.3 Vertex AI Search (Enterprise Catalog Grounding)
+* **Managed Enterprise Search:** Grounding datastore indexing structured product databases, PDF spec sheets, and price catalogs.
+* **Direct ADK Tool Integration:**
+  ```python
+  from google.adk.tools import VertexAiSearchTool
+  
+  SEARCH_ENGINE_PATH = f"projects/{PROJECT_ID}/locations/global/collections/default_collection/engines/{SEARCH_ENGINE_ID}"
+  paint_search_tool = VertexAiSearchTool(search_engine_id=SEARCH_ENGINE_PATH)
+  ```
+
+### 2.4 Chainlit Streaming UI & Multimodal Middleware
+* **Reactive Token Streaming:** Streams LLM text tokens asynchronously with low time-to-first-token (TTFT).
+* **DOM Swatch Transformation:** Parses HTML `<img>` tags emitted by agents using BeautifulSoup and transforms them into native interactive Chainlit image widgets (`cl.Image`):
+  ```python
+  # adk_challenge_lab/chainlit_ui/app.py
+  def convert_img_tags_to_chainlit_images(msg):
+      if not msg.content:
+          return msg
+      soup = BeautifulSoup(msg.content, "html.parser")
+      img_list = []
+      for img_tag in soup.find_all("img"):
+          if img_tag.has_attr("src"):
+              img_list.append(cl.Image(url=img_tag["src"], name="swatch", display="inline"))
+              img_tag.decompose()
+      msg.elements = img_list
+      msg.content = soup.get_text().strip() or " "
+      return msg
+  ```
+* **Non-Blocking Session Initialization:** Uses `await cl.make_async(agent.create_session)(user_id=...)` to avoid blocking the event loop on startup.
 
 ---
 
-## 3. Production Generalization Framework & Implementation Playbook
+## 3. Comparison of ADK Orchestration Patterns
+
+| Capability | Hierarchical Delegation (`sub_agents`) | Agent-as-a-Tool (`AgentTool`) | ADK 2.x Workflow DAG (`Workflow` / `@node`) |
+| :--- | :--- | :--- | :--- |
+| **Lab Example** | `paint_agent` $\rightarrow$ `room_planner` $\rightarrow$ `coverage_calc` | `paint_agent` $\rightarrow$ `search_agent` | `lab-genai162` Incident SRE Workflow |
+| **Execution Model** | Stateful conversational transfer | Synchronous function call | Directed Acyclic Graph (DAG) with parallel branches |
+| **Synchronization** | Sequential turn-by-turn | Single-turn request/response | Barrier synchronization (`JoinNode`) |
+| **State Sharing** | Session State (`ToolContext.state`) | Tool parameters & return value | Shared Graph State / Context payload |
+| **Primary Use Case** | Guided multi-step customer journeys | Auxiliary knowledge retrieval | Complex enterprise workflows with parallel tasks |
+
+---
+
+## 4. Production Generalization Framework & Implementation Playbook
+
+When building hierarchical multi-agent applications on Vertex AI, follow this 6-stage engineering playbook:
 
 ```mermaid
 flowchart LR
-    S1["1. Decompose Conversational Roles"] --> S2["2. Choose Delegation vs Tool Wrapping"]
+    S1["1. Decompose Roles & Personas"] --> S2["2. Choose Handoff vs Tool Wrapping"]
     S2 --> S3["3. Define Session State Schema"]
-    S3 --> S4["4. Deploy to Vertex AI Agent Engines"]
-    S4 --> S5["5. Wire Streaming UI Layer"]
-    S5 --> S6["6. Attach Enterprise Audit Logging"]
+    S3 --> S4["4. Wrap Deterministic Math Tools"]
+    S4 --> S5["5. Deploy to Agent Engines"]
+    S5 --> S6["6. Attach Observability & Streaming UI"]
 ```
 
-### Step 1: Decompose Conversational Roles
-* Avoid creating "all-in-one" mega-agents. Break workflows into distinct personas:
-  * **Intake & Discovery:** Understands user needs and queries catalogs (`paint_agent`).
-  * **Domain Planning:** Collects room/project parameters and presents visual options (`room_planner_agent`).
-  * **Mathematical/Transactional Execution:** Executes precise deterministic calculations (`coverage_calculator_agent`).
+### Stage 1: Decompose Roles & Personas
+* Avoid monolithic prompts. Split complex domains into distinct specialized agents:
+  1. **Intake & Discovery:** Understands user intent and queries product catalogs.
+  2. **Domain Planner:** Solicits user parameters and visual preferences.
+  3. **Execution & Math:** Runs deterministic calculations and finalizes transaction summaries.
 
-### Step 2: Choose Delegation (`sub_agents`) vs Tool Wrapping (`AgentTool`)
-* Use `sub_agents` when the sub-agent needs to own subsequent turns with the user.
-* Use `AgentTool` when the parent agent just needs quick information retrieval without losing user focus.
+### Stage 2: Choose Handoff (`sub_agents`) vs Tool Wrapping (`AgentTool`)
+* Use `sub_agents` when the child agent needs to hold multi-turn dialogue with the user.
+* Use `AgentTool` when the parent needs to fetch information without losing conversation focus.
 
-### Step 3: Define Session State Schema
-* Use `ToolContext.state` to store global transaction variables (`SELECTED_PAINT`, `COVERAGE_RATE`, `PRICE`).
-* Inject variables using `{VARIABLE?}` in prompt instructions so leaf agents inherit context seamlessly.
+### Stage 3: Define Session State Schema
+* Standardize global keys in `ToolContext.state` (e.g. `SELECTED_PAINT`, `COVERAGE_RATE`, `PRICE`, `ROOM_DATA`).
+* Use `{VARIABLE?}` in prompt instructions so downstream sub-agents automatically inherit context.
 
-### Step 4: Deploy to Managed Vertex AI Agent Engines
-* Package agent definitions with `google-cloud-aiplatform[agent_engines,adk]`.
-* Register and deploy via Vertex AI Agent Engines / Reasoning Engine for managed autoscaling and enterprise IAM.
+### Stage 4: Encapsulate Deterministic Math in Tools
+* Never rely on LLM token generation for geometric formulas, pricing math, tax calculations, or discount logic.
+* Always bind async, strictly typed Python functions with comprehensive docstrings.
 
-### Step 5: Wire Streaming UI Layer
-* Use `agent.async_stream_query` for low time-to-first-token (TTFT).
-* Post-process multi-modal elements (images, tables, markdown) in the UI bridge.
+### Stage 5: Deploy to Managed Vertex AI Agent Engines
+* Package dependencies in `requirements.txt` (`google-cloud-aiplatform[agent_engines,adk]`).
+* Deploy to Vertex AI Reasoning Engine / Agent Engines for zero-maintenance autoscaling and IAM access control.
 
-### Step 6: Attach Enterprise Audit Logging
-* Wire Cloud Logging into `before_model_callback` and `after_model_callback`.
-* Track latency, prompt inputs, model outputs, and tool execution logs in Cloud Logging for compliance and monitoring.
+### Stage 6: Attach Observability & Streaming UI
+* Intercept `before_model_callback` and `after_model_callback` to log exact payloads to Google Cloud Logging.
+* Build reactive streaming frontends (Chainlit, React, or Flutter) consuming `agent.async_stream_query` with multimodal asset parsing.
 
 ---
 
-## 4. Key Takeaways Summary
+## 5. Summary Matrix & Enterprise Checklist
 
-1. **Hierarchy Prevents Prompt Bloat:** Dividing conversational responsibility across `sub_agents` and `AgentTool` prevents system prompts from becoming fragile and unwieldy.
-2. **Session State Solves Data Handoffs:** Passing variables through `context.state` and `{VARIABLE?}` guarantees reliable cross-agent parameter sharing without hallucination.
-3. **Managed Agent Engines Enable Enterprise Scalability:** Deploying to Vertex AI Agent Engines provides zero-infrastructure scaling, built-in session routing, and enterprise IAM governance.
-4. **Multi-Modal Delivery with Streaming UI:** Blending text streaming with reactive multi-modal rendering (e.g. paint color swatches) delivers a polished consumer-ready experience.
+| Dimension | Standard Chatbot Prototype | Production Hierarchical Multi-Agent System |
+| :--- | :--- | :--- |
+| **Agent Structure** | Monolithic prompt with all tools | Decomposed hierarchy (`paint_agent` $\rightarrow$ `room_planner` $\rightarrow$ `coverage_calc`) |
+| **Information Retrieval** | Hardcoded text context | Managed Vertex AI Search Grounding via `AgentTool` |
+| **State Sharing** | In-prompt message history duplication | Isolated session state (`context.state`) + dynamic injection (`{KEY?}`) |
+| **Mathematical Accuracy** | Prompt-based LLM estimation | Deterministic typed Python tool (`paint_coverage_calculator`) |
+| **Cloud Runtime** | Self-hosted Flask/FastAPI VM | Managed Vertex AI Agent Engine / Reasoning Engine |
+| **Observability** | `print()` statements | Cloud Logging callbacks (`log_query_to_model`, `log_model_response`) |
+| **UI Experience** | Synchronous REST blocking wait | Asynchronous token streaming with interactive inline swatches |
