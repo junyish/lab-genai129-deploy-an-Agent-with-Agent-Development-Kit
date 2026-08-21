@@ -1,7 +1,7 @@
-# Staff SWE & FDE Engineering Guide: Deploying Hierarchical Multi-Agent Systems to Vertex AI Agent Engines
+# Architecture & Engineering Guide: Deploying Hierarchical Multi-Agent Systems to Vertex AI Agent Engines
 
 > **Lab Reference:** `GENAI129` — *Deploy an Agent with Agent Development Kit (ADK)*  
-> **Role Context:** Google Staff Software Engineer & Forward Deployed Engineer (FDE)  
+> **Architecture Pattern:** Hierarchical Multi-Agent Coordination, Tool Wrapping, State Injection, Cloud Logging  
 > **Core Technologies:** Google Agent Development Kit (ADK), Vertex AI Reasoning Engine / Agent Engines, Gemini 2.5 Flash, Vertex AI Search, Google Cloud Logging, Chainlit Streaming UI.
 
 ---
@@ -135,7 +135,7 @@ def log_model_response(callback_context: CallbackContext, llm_response: LlmRespo
 
 ---
 
-## 3. Staff SWE / FDE Generalization Framework
+## 3. Production Generalization Framework & Implementation Playbook
 
 ```mermaid
 flowchart LR

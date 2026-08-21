@@ -36,7 +36,7 @@ graph TD
 .
 ├── .gitignore                                      # Comprehensive ignore rules
 ├── README.md                                       # Project documentation
-├── takeaway-genai129-deploy-adk-agent-vertexai.md   # Staff SWE & FDE Architectural Guide
+├── takeaway-genai129-deploy-adk-agent-vertexai.md   # System Architecture & Engineering Guide
 └── adk_challenge_lab/
     ├── .env.example                                # Environment variable template
     ├── requirements.txt                            # Python dependencies
