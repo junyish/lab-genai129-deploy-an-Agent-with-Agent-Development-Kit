@@ -292,6 +292,116 @@ def log_model_response(callback_context: CallbackContext, llm_response: LlmRespo
 
 ---
 
+### 3.1 Deep Dive: Session State Sharing Mechanics & Concrete Walkthrough
+
+In multi-agent systems, passing conversational transcripts back and forth across different agents leads to **context bloat, high LLM token costs, and attention dilution ("lost in the middle")**.
+
+Google ADK solves this by decoupling **conversational dialogue** from **session state**:
+* **Session State (`context.state`):** A persistent, typed key-value blackboard scoped to the active `session_id`.
+* **Prompt Variable Injection (`{KEY?}`):** Downstream agents declare placeholders in their `instruction` strings. ADK dynamically populates these variables at runtime before sending the prompt to the model.
+
+```mermaid
+sequenceDiagram
+    autonumber
+    actor User
+    participant PA as 1. paint_agent
+    participant State as Session State (context.state)
+    participant RP as 2. room_planner_agent
+    participant CC as 3. coverage_calculator_agent
+
+    Note over User,PA: Turn 1: Product Selection & Catalog Query
+    User->>PA: "I want the EcoGreen paint for my living room and bedroom."
+    PA->>PA: Calls search_agent (AgentTool) -> gets 12 sq m/L, $45.00/L
+    PA->>State: set_session_value("SELECTED_PAINT", "EcoGreen")
+    PA->>State: set_session_value("COVERAGE_RATE", "12")
+    PA->>State: set_session_value("PRICE", "45")
+    PA->>RP: Delegated via sub_agents
+
+    Note over RP,User: Turn 2: Visual Swatches & Room Intake
+    Note over RP: Instruction resolves {SELECTED_PAINT?} -> "EcoGreen"
+    RP->>User: "Displaying EcoGreen swatch. How many rooms and doors/windows?"
+    User->>RP: "2 rooms. Living room: 5x4m (2 windows, 1 door). Bedroom: 4x3m (1 window, 1 door). Ceiling: 2.7m."
+    RP->>State: set_session_value("ROOM_SPECS", "LR: 5x4m, BR: 4x3m, H: 2.7m")
+    RP->>CC: Delegated via sub_agents
+
+    Note over CC,User: Turn 3: Deterministic Math & Final Quote
+    Note over CC: Instruction resolves {SELECTED_PAINT?}, {COVERAGE_RATE?}, {ROOM_SPECS?}
+    CC->>CC: Calls paint_coverage_calculator(5, 4, 2.7, 2, 1) -> 43.1 sq m
+    CC->>CC: Calls paint_coverage_calculator(4, 3, 2.7, 1, 1) -> 34.3 sq m
+    CC->>User: "Total area: 77.4 sq m. You need 7 Liters of EcoGreen (2x 5L cans). Total: $450.00."
+```
+
+---
+
+#### 🛠️ The 4 Access Patterns for Session State in ADK
+
+```python
+# ==============================================================================
+# PATTERN 1: Writing State from a Custom Tool (ToolContext.state)
+# ==============================================================================
+from google.adk.tools import ToolContext
+
+def set_session_value(key: str, value: str, context: ToolContext) -> str:
+    """Stores key-value pairs in the persistent session state dictionary."""
+    context.state[key] = value
+    return f"stored '{value}' in '{key}'"
+
+
+# ==============================================================================
+# PATTERN 2: Dynamic State Injection in Prompt Instructions ({KEY?})
+# ==============================================================================
+# The trailing '?' marks the variable as OPTIONAL (renders as empty string if key is unset).
+room_planner_agent = Agent(
+    name="room_planner_agent",
+    model=Gemini(model=MODEL),
+    instruction="""
+    You are the Room Planner Agent.
+    The customer is currently viewing the paint: {SELECTED_PAINT?}.
+    The coverage rate is: {COVERAGE_RATE?} sq m/L.
+
+    If {SELECTED_PAINT?} is set to 'EcoGreen', display the EcoGreen swatch URL:
+    https://storage.googleapis.com/paint-assets/ecogreen.png
+
+    Ask the user for room count and dimensions.
+    """,
+    sub_agents=[coverage_calculator_agent],
+)
+
+
+# ==============================================================================
+# PATTERN 3: Reading / Mutating State inside Lifecycle Callbacks (CallbackContext)
+# ==============================================================================
+from google.adk.agents.callback_context import CallbackContext
+from google.adk.models import LlmRequest
+
+def audit_session_state(callback_context: CallbackContext, llm_request: LlmRequest):
+    """Inspects active session variables before sending prompt to Gemini."""
+    current_paint = callback_context.state.get("SELECTED_PAINT", "None")
+    logging.info(f"Agent [{callback_context.agent_name}] running with SELECTED_PAINT={current_paint}")
+
+
+# ==============================================================================
+# PATTERN 4: Programmatic State Access via Session Service
+# ==============================================================================
+# External microservices or webhook handlers can directly mutate session state:
+session = await session_service.get_session(session_id="session_xyz123")
+session.state["DISCOUNT_CODE"] = "SUMMER20"
+await session_service.update_session(session)
+```
+
+---
+
+#### 📊 State Sharing Matrix across ADK Patterns
+
+| Orchestration Pattern | State Storage Mechanism | Scope & Lifetime | How Child / Sibling Accesses State |
+| :--- | :--- | :--- | :--- |
+| **Hierarchical Delegation (`sub_agents`)** | Centralized `Session.state` | Persists across entire multi-turn user session | Dynamic prompt variable injection (`{KEY?}`) or `context.state` read |
+| **Agent-as-a-Tool (`AgentTool`)** | Ephemeral tool call arguments / return | Scoped to single tool invocation | Parent receives output payload and writes to `context.state` if needed |
+| **Workflow DAG (`Workflow` / `@node`)** | `Event(state={...})` + Workflow Context | Scoped to graph execution run | Injected into downstream node prompt templates via `{node_state_key}` |
+| **Memory Bank (`google.adk.memory`)** | Vector / Associative Database | Cross-session, long-term persistent recall | Queried associatively via `load_memory` tool across different sessions |
+
+---
+
 ## 4. Production Generalization Framework & Implementation Playbook
 
 When building hierarchical multi-agent applications on Vertex AI, follow this 6-stage engineering playbook:
