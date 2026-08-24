@@ -1,7 +1,14 @@
 # Cymbal Shops Paint Department AI Assistant (Google ADK & Vertex AI Agent Engine)
 
-> **Lab Reference:** `GENAI129` — *Deploy an Agent with Agent Development Kit (ADK)*  
-> **Technologies:** Google Agent Development Kit (ADK), Vertex AI Reasoning Engine / Agent Engines, Gemini 2.5 Flash, Vertex AI Search, Google Cloud Logging, Chainlit UI.
+[![Python 3.10+](https://img.shields.io/badge/python-3.10%2B-blue.svg)](https://www.python.org/downloads/)
+[![Google ADK](https://img.shields.io/badge/Google-ADK%202.x-4285F4.svg)](https://google.github.io/adk-docs/)
+[![Vertex AI](https://img.shields.io/badge/Vertex%20AI-Agent%20Engines-34A853.svg)](https://cloud.google.com/vertex-ai)
+[![Google Cloud Skills Boost](https://img.shields.io/badge/Lab%20Guide-Focus%20130021-4285F4?logo=googlecloud&logoColor=white)](https://partner.skills.google/focuses/130021?parent=catalog)
+[![Chainlit UI](https://img.shields.io/badge/UI-Chainlit%20Streaming-F57C00.svg)](https://chainlit.io)
+
+> **Lab Guide:** [Deploy an Agent with Agent Development Kit (ADK) (Focus 130021 / GENAI129)](https://partner.skills.google/focuses/130021?parent=catalog)  
+> **Course Catalog:** Google Cloud Partner Skills / Google Cloud Skills Boost  
+> **Architecture Pattern:** Hierarchical Multi-Agent Coordination, Tool Wrapping (`AgentTool`), Session State Injection (`{KEY?}`), Cloud Logging Callbacks, Vertex AI Agent Engines Deployment.
 
 ---
 
