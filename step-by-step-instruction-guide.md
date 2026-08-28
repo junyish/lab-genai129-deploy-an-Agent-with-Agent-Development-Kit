@@ -457,12 +457,12 @@ chainlit run app.py -w --port 8080
 
 ## 🏆 Summary Checklist for Passing Lab 129
 
-| Item | Requirement | Verified? |
-| :---: | :--- | :--- :|
-| 1 | `search_agent` is wrapped in `AgentTool(search_agent)` inside `paint_agent.tools` | ✅ |
-| 2 | `room_planner_agent` is the ONLY child in `paint_agent.sub_agents` | ✅ |
-| 3 | `SELECTED_PAINT`, `COVERAGE_RATE`, and `PRICE` are written via `set_session_value` | ✅ |
-| 4 | Color swatch URLs are rendered in Markdown/HTML by `room_planner_agent` | ✅ |
-| 5 | Wall coverage and required 2.5L cans are calculated deterministically by `paint_coverage_calculator` | ✅ |
-| 6 | Agent is deployed using `adk deploy agent_engine` | ✅ |
-| 7 | End-to-end multi-turn conversation verified on Chainlit UI | ✅ |
+| # | Lab Verification Requirement | Implementation Target | Status |
+| :-: | :--- | :--- | :-: |
+| 1 | **Search Agent Tool Wrapping** | `search_agent` is wrapped in `AgentTool(agent=search_agent)` inside `paint_agent.tools` | ✅ Passed |
+| 2 | **Single Conversational Handoff** | `room_planner_agent` is the ONLY child in `paint_agent.sub_agents` | ✅ Passed |
+| 3 | **Session State Persistence** | `SELECTED_PAINT`, `COVERAGE_RATE`, and `PRICE` saved via `set_session_value` | ✅ Passed |
+| 4 | **Dynamic Swatch Rendering** | Color swatch image URLs rendered in Markdown/HTML by `room_planner_agent` | ✅ Passed |
+| 5 | **Deterministic Area Calculation** | Net wall area & required 2.5L cans calculated by `paint_coverage_calculator` | ✅ Passed |
+| 6 | **Agent Engine Deployment** | Deployed via ADK CLI: `adk deploy agent_engine ... paint_agent` | ✅ Passed |
+| 7 | **Interactive Multi-Turn Testing** | Multi-turn customer dialogue verified on Chainlit UI | ✅ Passed |
