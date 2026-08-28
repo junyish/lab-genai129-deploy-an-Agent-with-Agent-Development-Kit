@@ -13,7 +13,7 @@ RETRY_OPTIONS = types.HttpRetryOptions(initial_delay=1, max_delay=3, attempts=30
 
 coverage_calculator_agent = Agent(
     name="coverage_calculator_agent",
-    model=Gemini(model=os.getenv("MODEL"), retry_options=RETRY_OPTIONS),
+    model=Gemini(model=os.getenv("MODEL", "gemini-3.6-flash"), retry_options=RETRY_OPTIONS),
     instruction="""
         You are a coverage calculator agent.
         Your job is to calculate the amount of paint needed.

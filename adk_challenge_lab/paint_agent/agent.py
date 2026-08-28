@@ -34,13 +34,17 @@ load_dotenv()
 
 RETRY_OPTIONS = types.HttpRetryOptions(initial_delay=1, max_delay=3, attempts=30)
 
-# Configure logging to the Cloud
-cloud_logging_client = google.cloud.logging.Client()
-cloud_logging_client.setup_logging()
+# Configure logging
+if os.getenv("GOOGLE_GENAI_USE_VERTEXAI", "").lower() == "true":
+    try:
+        cloud_logging_client = google.cloud.logging.Client()
+        cloud_logging_client.setup_logging()
+    except Exception:
+        pass
 
 root_agent = Agent(
     name="paint_agent",
-    model=Gemini(model=os.getenv("MODEL"), retry_options=RETRY_OPTIONS),
+    model=Gemini(model=os.getenv("MODEL", "gemini-3.6-flash"), retry_options=RETRY_OPTIONS),
     instruction="""
     You represent the paint department of Cymbal Shops.
 

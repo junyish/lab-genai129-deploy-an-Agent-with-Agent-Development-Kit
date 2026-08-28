@@ -11,7 +11,7 @@ RETRY_OPTIONS = types.HttpRetryOptions(initial_delay=1, max_delay=3, attempts=30
 
 room_planner_agent = Agent(
     name="room_planner_agent",
-    model=Gemini(model=os.getenv("MODEL"), retry_options=RETRY_OPTIONS),
+    model=Gemini(model=os.getenv("MODEL", "gemini-3.6-flash"), retry_options=RETRY_OPTIONS),
     description="""
         after paint product is selected, determine how many rooms and
         present color options.""",
